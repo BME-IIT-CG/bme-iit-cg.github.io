@@ -1,0 +1,61 @@
+# Builds the site from the tutorial repositories and publishes it with GitHub Pages.
+# Runs on every push to main, and by hand (Actions → Deploy → Run workflow), e.g. after
+# a tutorial chain changed.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: site
+
+      # The course repositories, with full history: every step is a commit.
+      # They are private, so this needs a token that can read them (secret TUTORIALS_TOKEN).
+      - uses: actions/checkout@v4
+        with:
+          repository: BME-IIT-CG/kog-3gr
+          path: tutorials/kog-3gr
+          fetch-depth: 0
+          token: ${{ secrets.TUTORIALS_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Build
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

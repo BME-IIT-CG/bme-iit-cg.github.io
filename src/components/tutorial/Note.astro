@@ -1,0 +1,35 @@
+---
+// An annotation anchored to the only line of `file` that contains `pattern`.
+// It shows that line, with the pattern marked, and the note below it.
+import { Code } from '@astrojs/starlight/components';
+import { fileAt, lineOf, languageOf } from './git';
+
+interface Props {
+  repo: string;
+  commit: string;
+  file: string;
+  pattern: string;
+}
+const { repo, commit, file, pattern } = Astro.props;
+
+const text = fileAt(repo, commit, file);
+const lines = text.split('\n');
+const at = lineOf(text, pattern, file, commit);
+// show the line itself, with its common indentation removed
+const line = lines[at].replace(/^\s+/, '');
+---
+<aside class="tutorial-note">
+  <Code code={line} lang={languageOf(file)} title={`${file.split('/').pop()}:${at + 1}`} mark={pattern} />
+  <div class="tutorial-note-text"><slot /></div>
+</aside>
+
+<style>
+  .tutorial-note {
+    border-inline-start: 4px solid var(--sl-color-accent);
+    padding-inline-start: 1rem;
+    margin-block: 1.5rem;
+  }
+  .tutorial-note-text {
+    margin-top: 0.5rem;
+  }
+</style>

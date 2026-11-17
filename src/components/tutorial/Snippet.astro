@@ -1,0 +1,28 @@
+---
+// A file at this step, or the part of it from the line containing `from`
+// up to (not including) the line containing `to`. Each pattern must match exactly one line.
+import { Code } from '@astrojs/starlight/components';
+import { fileAt, lineOf, languageOf } from './git';
+
+interface Props {
+  repo: string;
+  commit: string;
+  file: string;
+  from?: string;
+  to?: string;
+  mark?: string | string[];
+}
+const { repo, commit, file, from, to, mark } = Astro.props;
+
+const text = fileAt(repo, commit, file).replace(/\n$/, '');
+const lines = text.split('\n');
+const start = from ? lineOf(text, from, file, commit) : 0;
+let end = lines.length;
+if (to) {
+  const rest = lines.slice(start + 1).join('\n');
+  end = start + 1 + lineOf(rest, to, file, commit);
+}
+const code = lines.slice(start, end).join('\n').replace(/\s+$/, '');
+const title = file.split('/').pop();
+---
+<Code code={code} lang={languageOf(file)} title={title} mark={mark} />

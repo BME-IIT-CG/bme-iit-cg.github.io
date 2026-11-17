@@ -1,0 +1,78 @@
+---
+// The steps of a tutorial as slides: one step per 16:9 screen, ← → (or PageUp/PageDown) to move,
+// F for fullscreen. A slide that does not fit scrolls inside itself.
+import { getCollection, render } from 'astro:content';
+import 'katex/dist/katex.min.css';
+import tutorials from '../../../tutorials.json';
+
+export async function getStaticPaths() {
+  return tutorials.map((t) => ({ params: { section: t.section }, props: { tutorial: t } }));
+}
+
+const { tutorial } = Astro.props;
+const steps = (await getCollection('docs', (e) => e.id.startsWith(`${tutorial.section}/`) && e.data.step))
+  .sort((a, b) => (a.data.step! < b.data.step! ? -1 : 1));
+const slides = await Promise.all(steps.map(async (s) => ({ entry: s, Content: (await render(s)).Content })));
+---
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{tutorial.label} · slides</title>
+  </head>
+  <body>
+    {slides.map(({ entry, Content }, i) => (
+      <section class="slide" id={`s${i + 1}`}>
+        <div class="frame">
+          <header>
+            <span class="step">{entry.data.step}</span>
+            <h1>{entry.data.title}</h1>
+          </header>
+          <div class="content"><Content /></div>
+          <footer>{i + 1} / {slides.length} · <a href={`/${entry.id}/`}>page</a></footer>
+        </div>
+      </section>
+    ))}
+
+    <script>
+      const slides = [...document.querySelectorAll<HTMLElement>('.slide')];
+      const current = () => Math.max(0, slides.findIndex((s) => Math.abs(s.getBoundingClientRect().top) < window.innerHeight / 2));
+      const go = (i: number) => slides[Math.min(slides.length - 1, Math.max(0, i))]?.scrollIntoView();
+      document.addEventListener('keydown', (e) => {
+        if ((e.target as HTMLElement).closest('iframe')) return;
+        if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current() + 1); }
+        if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current() - 1); }
+        if (e.key === 'f') document.documentElement.requestFullscreen?.();
+      });
+    </script>
+
+    <style is:global>
+      :root {
+        --sl-color-accent: #8b9cf5;
+        --sl-color-gray-3: #9aa0ad;
+        --sl-color-gray-5: #3a3f4b;
+        --sl-text-sm: 0.8rem;
+        color-scheme: dark;
+      }
+      html, body { margin: 0; background: #0d0f14; color: #e6e8ee; font-family: system-ui, sans-serif; }
+      html { scroll-snap-type: y mandatory; }
+      .slide { height: 100vh; display: grid; place-items: center; scroll-snap-align: start; }
+      .frame {
+        width: min(100vw, calc(100vh * 16 / 9));
+        height: min(100vh, calc(100vw * 9 / 16));
+        box-sizing: border-box;
+        padding: 2.5vmin 4vmin;
+        display: flex; flex-direction: column;
+        font-size: 2.4vmin;
+      }
+      header { display: flex; align-items: baseline; gap: 1em; }
+      header h1 { margin: 0 0 0.5em; font-size: 1.8em; }
+      .step { color: var(--sl-color-gray-3); font-family: ui-monospace, monospace; }
+      .content { flex: 1; overflow: auto; }
+      footer { font-size: 0.7em; color: var(--sl-color-gray-3); text-align: right; }
+      footer a { color: inherit; }
+      .content iframe { height: 50vmin !important; }
+    </style>
+  </body>
+</html>

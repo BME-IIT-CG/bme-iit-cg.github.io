@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+# built by scripts/build-demos.mjs
+public/demos/** linguist-generated

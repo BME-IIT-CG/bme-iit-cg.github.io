@@ -1,0 +1,45 @@
+---
+// The project at this step, running. Demos are built by scripts/build-demos.mjs into public/demos.
+import fs from 'node:fs';
+import path from 'node:path';
+
+interface Props {
+  tutorial: string;
+  step: string;
+  height?: number;
+}
+const { tutorial, step, height = 480 } = Astro.props;
+
+const src = `/demos/${tutorial}/${step}/index.html`;
+const built = fs.existsSync(path.join(process.cwd(), 'public', src));
+---
+{built ? (
+  <figure class="tutorial-demo">
+    <iframe src={src} title={`Step ${step}, running`} style={`height: ${height}px`} loading="lazy"></iframe>
+    <figcaption>
+      Running in your browser with WebGPU. Click into it for keyboard input.
+      <a href={src} target="_blank">Open on its own page</a>
+    </figcaption>
+  </figure>
+) : (
+  <p class="tutorial-demo-missing">
+    The demo of this step has not been built. Run <code>node scripts/build-demos.mjs</code>.
+  </p>
+)}
+
+<style>
+  .tutorial-demo iframe {
+    width: 100%;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    background: black;
+  }
+  .tutorial-demo figcaption {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+  .tutorial-demo-missing {
+    font-style: italic;
+    color: var(--sl-color-gray-3);
+  }
+</style>

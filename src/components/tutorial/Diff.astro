@@ -1,0 +1,18 @@
+---
+// What this step changes in `file`; or, with `against`, how `file` differs from `against` at this step.
+import { Code } from '@astrojs/starlight/components';
+import { diffAt, languageOf } from './git';
+
+interface Props {
+  repo: string;
+  commit: string;
+  file: string;
+  against?: string;
+}
+const { repo, commit, file, against } = Astro.props;
+
+const code = diffAt(repo, commit, file, against);
+const name = file.split('/').pop();
+const title = against ? `${against.split('/').pop()} → ${name}` : name;
+---
+<Code code={code} lang="diff" meta={`lang="${languageOf(file)}"`} title={title} />
